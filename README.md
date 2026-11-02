@@ -5,7 +5,7 @@
 - GitHub 저장소: [oep001/linear-transformation-visualizer](https://github.com/oep001/linear-transformation-visualizer)
 - Render 서비스 주소: [Linear Transformation Visualizer](https://linear-transformation-visualizer.onrender.com)
 
-공개 URL의 실제 접속 결과와 Push 후 자동 재배포 검증 상태는 [deployment-status.md](deployment-status.md)에 기록합니다. 서비스 주소나 설정 파일이 존재한다는 이유만으로 배포·CI/CD 검증 완료를 주장하지 않습니다.
+GitHub 소스 업로드와 Render 무료 Web Service 배포를 완료했습니다. 2026년 11월 2일 14:37:47(한국시간), `main`의 새 커밋 `6559848`을 감지한 Render 자동 배포가 `live` 상태로 완료되었고 같은 커밋의 GitHub Actions도 성공했습니다. 공개 URL의 API 검사 20개가 통과했으며 `/api/version`과 실제 화면에서 **1.0.2 / 6559848** 및 변경 문구가 일치했습니다. 320px·390px 모바일 화면과 주요 조작도 확인했습니다. 배포 이벤트·커밋·공개 화면 확인 결과는 [deployment-status.md](deployment-status.md)에 기록합니다.
 
 ## 주요 기능
 
@@ -67,7 +67,7 @@ python3 -m venv .venv
 node --check static/app.js
 ```
 
-두 번째 명령은 Node.js가 설치된 경우 실행하는 JavaScript 문법 검사입니다. 앱 실행에는 Node.js가 필요하지 않습니다. 테스트 코드를 작성하거나 실행을 시도한 사실과 실제 통과한 결과는 구분해야 합니다. 실행 결과는 제출 자료의 검증 기록을 확인하세요.
+두 번째 명령은 Node.js가 설치된 경우 실행하는 JavaScript 문법 검사입니다. 앱 실행에는 Node.js가 필요하지 않습니다. 실제 검증 결과는 **pytest 37개 통과**, JavaScript 문법 검사 통과이며, 로컬 테스트에서 외부 Starlette/AnyIO의 폐기 예정 경고 1건이 있었습니다. GitHub Actions의 실제 실행 결과도 [성공한 CI 실행](https://github.com/oep001/linear-transformation-visualizer/actions/runs/41395062950)에서 확인할 수 있습니다.
 
 ## API
 
@@ -143,6 +143,8 @@ git push -u origin main
 
 기존 원격에 오류가 나면 먼저 상태를 확인하고 `--force`로 해결하지 않습니다. GitHub 로그인과 최초 저장소 생성 권한 승인은 계정 소유자가 수행할 수 있습니다. 공개 저장소에는 소스코드가 공개되므로 인증정보·학번·불필요한 개인정보를 포함하지 마세요.
 
+이번 작업에서는 연결된 GitHub 도구로 소스를 업로드하고 `main`을 정상적인 fast-forward 방식으로 갱신하여 실제 Push 이벤트를 발생시켰습니다. 상세 업로드·계정 연결 과정은 [배포 검증 기록](deployment-status.md)에 남겼습니다. 강제 Push는 사용하지 않았습니다.
+
 ## Render 최초 배포
 
 1. [Render Dashboard](https://dashboard.render.com/)에 로그인합니다.
@@ -182,6 +184,8 @@ main Push
 선택적으로 Render Dashboard에서 Auto-Deploy를 `After CI Checks Pass`로 변경하고 Blueprint도 `autoDeployTrigger: checksPass`로 맞추면 CI 통과를 배포 조건으로 사용할 수 있습니다. 이는 현재 활성화된 설정이 아니며, 전환할 때는 GitHub Actions 권한과 검사 실행·성공 여부를 다시 확인해야 합니다.
 
 최초 배포 성공 후 `static/index.html`의 설명 문구를 변경하고 Commit/Push합니다. 새 GitHub Actions 실행 성공, 같은 SHA의 Render 자동 배포, 공개 화면 변경 및 `/api/version`의 커밋을 모두 확인해야 자동 배포 실증이 완료됩니다. 수동 재배포만 성공한 경우 자동 배포 검증으로 기록하지 않습니다. 자세한 기록 양식은 [deployment-status.md](deployment-status.md)에 있습니다.
+
+이번 검증에서는 계정 소유자가 Render의 GitHub 연결 및 서비스의 Git Credentials 선택을 완료한 뒤 `main`을 갱신했습니다. Render가 새 커밋을 감지하여 배포 `dep-dbk22uivcj2c73fi3if0`을 자동 실행했고, 14:36:58에 시작하여 14:37:47에 `live`로 완료되었습니다. 이 자동 배포 검증에는 수동 Deploy를 사용하지 않았습니다.
 
 ## 제출 자료
 
