@@ -2,7 +2,10 @@
 
 2×2 행렬이 평면을 어떻게 바꾸는지 격자·벡터·기저벡터로 탐구하는 한국어 교육용 웹앱입니다. 대학교 「오픈소스SW개발방법및도구」 HW2 과제로, FastAPI 계산 API와 SVG 시각화, GitHub Actions CI, Render 자동 배포 설정을 함께 제공합니다.
 
-실제 GitHub·Render URL과 배포 검증 결과는 [deployment-status.md](deployment-status.md)에 기록합니다. 설정 파일이 존재한다는 이유만으로 배포·CI/CD 검증 완료를 주장하지 않습니다.
+- GitHub 저장소: [oep001/linear-transformation-visualizer](https://github.com/oep001/linear-transformation-visualizer)
+- Render 서비스 주소: [Linear Transformation Visualizer](https://linear-transformation-visualizer.onrender.com)
+
+공개 URL의 실제 접속 결과와 Push 후 자동 재배포 검증 상태는 [deployment-status.md](deployment-status.md)에 기록합니다. 서비스 주소나 설정 파일이 존재한다는 이유만으로 배포·CI/CD 검증 완료를 주장하지 않습니다.
 
 ## 주요 기능
 
@@ -112,7 +115,7 @@ Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/transform -Content
 
 ### `GET /health`
 
-프로세스 상태를 확인하는 HTTP 200 응답입니다. Render의 상태 확인 경로로 사용합니다.
+프로세스 상태를 확인하는 HTTP 200 응답입니다. `render.yaml`은 Render의 상태 확인 경로로 `/health`를 지정합니다. 현재 연결 도구로 직접 생성한 서비스는 명시적인 Health Check Path가 비어 있으며 기본 상태 확인을 사용합니다. 공개 URL의 `/health` API도 별도로 검증합니다.
 
 ### `GET /api/version`
 
@@ -126,7 +129,7 @@ Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/transform -Content
 
 ## GitHub 업로드
 
-1. GitHub에서 빈 저장소를 생성합니다. 예: `linear-transformation-visualizer`. 이미 파일이 있는 저장소를 대상으로 덮어쓰지 않습니다.
+1. 이 프로젝트의 저장소는 [oep001/linear-transformation-visualizer](https://github.com/oep001/linear-transformation-visualizer)입니다. 별도의 복사본을 배포한다면 본인 계정에 빈 저장소를 생성하고 아래 원격 주소를 그 저장소 주소로 변경합니다. 이미 파일이 있는 저장소를 대상으로 덮어쓰지 않습니다.
 2. 이 폴더에 이미 Git 저장소가 있다면 현재 상태와 원격을 먼저 확인합니다.
 3. 아직 Git 저장소가 없는 새 프로젝트 폴더에서 다음을 실행합니다.
 
@@ -134,11 +137,11 @@ Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/transform -Content
 git init -b main
 git add .
 git commit -m "Build linear transformation visualizer"
-git remote add origin https://github.com/YOUR_USERNAME/linear-transformation-visualizer.git
+git remote add origin https://github.com/oep001/linear-transformation-visualizer.git
 git push -u origin main
 ```
 
-`YOUR_USERNAME`은 실제 계정명으로 바꿉니다. 기존 원격에 오류가 나면 먼저 상태를 확인하고 `--force`로 해결하지 않습니다. GitHub 로그인과 최초 저장소 생성 권한 승인은 계정 소유자가 수행할 수 있습니다. 공개 저장소에는 소스코드가 공개되므로 인증정보·학번·불필요한 개인정보를 포함하지 마세요.
+기존 원격에 오류가 나면 먼저 상태를 확인하고 `--force`로 해결하지 않습니다. GitHub 로그인과 최초 저장소 생성 권한 승인은 계정 소유자가 수행할 수 있습니다. 공개 저장소에는 소스코드가 공개되므로 인증정보·학번·불필요한 개인정보를 포함하지 마세요.
 
 ## Render 최초 배포
 
@@ -149,7 +152,7 @@ git push -u origin main
 5. 서비스를 생성하고 최초 빌드와 배포가 끝날 때까지 Render의 Events와 Logs를 확인합니다.
 6. 표시된 실제 `https://...onrender.com` 주소에서 웹페이지, `/health`, `/api/version`, `/api/transform`을 확인합니다.
 
-Blueprint를 사용하지 않고 Web Service를 직접 생성할 때도 다음 값을 동일하게 설정합니다.
+이 프로젝트의 서비스는 연결 도구로 GitHub 저장소와 연결한 Web Service로 직접 생성했습니다. 다음 표는 재현할 설정이며, `/health`는 Blueprint의 권장 상태 확인 경로입니다. 저장소의 `render.yaml`은 Blueprint로 새로 구성할 때 사용할 수 있으며, 파일을 수정하는 것만으로 직접 생성한 서비스 설정이 자동 변경되지는 않습니다.
 
 | 설정 | 값 |
 | --- | --- |
@@ -159,8 +162,8 @@ Blueprint를 사용하지 않고 Web Service를 직접 생성할 때도 다음 �
 | Instance Type | **Free** |
 | Build Command | `pip install -r requirements.txt` |
 | Start Command | `uvicorn app.main:app --host 0.0.0.0 --port $PORT` |
-| Health Check Path | `/health` |
-| Auto-Deploy | After CI Checks Pass |
+| Health Check Path | `/health` 권장 · 현재 직접 생성 서비스는 명시 경로 없이 기본 확인 사용 |
+| Auto-Deploy | On Commit (`autoDeployTrigger: commit`) |
 | Python version | `PYTHON_VERSION=3.12.16` |
 
 앱은 Render가 주입하는 `PORT`에 바인딩하고 `0.0.0.0`에서 외부 요청을 받습니다. 데이터베이스·디스크·API 키는 필요하지 않습니다. 무료 서비스는 15분 유휴 후 중지되며 다음 요청 때 시작하는 데 약 1분이 걸릴 수 있습니다. 무료 사용량 한도를 확인하세요.
@@ -169,13 +172,14 @@ Blueprint를 사용하지 않고 Web Service를 직접 생성할 때도 다음 �
 
 ```text
 main Push
-  → GitHub Actions CI: 의존성 설치 → pytest → JavaScript 문법 검사
-  → CI 성공 확인 후 Render 자동 배포
-  → Render: 빌드 → 서버 시작 → /health 확인 → Live
-  → 공개 URL의 변경 문구와 /api/version 커밋 대조
+  ├→ GitHub Actions CI: 의존성 설치 → pytest → JavaScript 문법 검사
+  └→ Render 자동 배포: 빌드 → 서버 시작 → 상태 확인 → Live
+       → 공개 URL의 변경 문구와 /api/version 커밋 대조
 ```
 
-`.github/workflows/ci.yml`은 `main` Push, `main` 대상 Pull Request, 수동 실행을 지원합니다. Render의 `autoDeployTrigger: checksPass`는 연결 브랜치의 CI가 성공한 커밋을 자동 배포하도록 설정합니다. GitHub Actions가 비활성화됐거나 검사 실행 자체가 없으면 이 방식의 자동 배포도 진행되지 않을 수 있으므로 Actions 권한과 실행 결과를 확인합니다.
+`.github/workflows/ci.yml`은 `main` Push, `main` 대상 Pull Request, 수동 실행을 지원합니다. 현재 Render의 실제 설정과 `render.yaml`은 모두 `autoDeployTrigger: commit`으로, `main`의 새 커밋을 감지하면 자동 배포를 시작합니다. GitHub Actions CI는 배포와 병행되며 **현재 설정에서는 테스트 통과가 배포의 선행 조건이 아닙니다.** CI가 실패하더라도 배포가 시작될 수 있으므로 Actions 결과와 Render 배포 결과를 각각 확인합니다.
+
+선택적으로 Render Dashboard에서 Auto-Deploy를 `After CI Checks Pass`로 변경하고 Blueprint도 `autoDeployTrigger: checksPass`로 맞추면 CI 통과를 배포 조건으로 사용할 수 있습니다. 이는 현재 활성화된 설정이 아니며, 전환할 때는 GitHub Actions 권한과 검사 실행·성공 여부를 다시 확인해야 합니다.
 
 최초 배포 성공 후 `static/index.html`의 설명 문구를 변경하고 Commit/Push합니다. 새 GitHub Actions 실행 성공, 같은 SHA의 Render 자동 배포, 공개 화면 변경 및 `/api/version`의 커밋을 모두 확인해야 자동 배포 실증이 완료됩니다. 수동 재배포만 성공한 경우 자동 배포 검증으로 기록하지 않습니다. 자세한 기록 양식은 [deployment-status.md](deployment-status.md)에 있습니다.
 

@@ -52,7 +52,7 @@ class TransformResponse(BaseModel):
 app = FastAPI(
     title="Linear Transformation Visualizer",
     description="2×2 행렬과 2차원 벡터의 선형변환 계산 API",
-    version="1.0.0",
+    version="1.0.1",
 )
 app.mount("/static", StaticFiles(directory=ROOT / "static", check_dir=False), name="static")
 
@@ -83,7 +83,7 @@ def health() -> dict[str, str]:
 def version() -> JSONResponse:
     return JSONResponse(
         content={
-            "version": os.getenv("APP_VERSION", "1.0.0"),
+            "version": os.getenv("APP_VERSION", "1.0.1"),
             "commit": os.getenv("RENDER_GIT_COMMIT", "local"),
         },
         headers={"Cache-Control": "no-store"},
