@@ -40,6 +40,11 @@ function docker {
             $name = $a[[Array]::IndexOf($a, '--name') + 1]
             $id = 'id-' + $name
             $global:HW3TestContainers[$id] = @{Name=$name;Commit=$global:HW3TestCommitB;Managed='true';Running=$true}
+            if (($global:HW3TestScenario -eq 'candidate-run-fails' -and $name -like '*-candidate') -or ($global:HW3TestScenario -eq 'production-run-fails' -and $name -eq 'test-hw3')) {
+                $global:HW3TestContainers[$id].Running = $false
+                $global:LASTEXITCODE = 1
+                return
+            }
             return $id
         }
         'rm' {
@@ -75,7 +80,7 @@ function Invoke-RestMethod {
 }
 function Start-Sleep { param($Seconds) }
 
-foreach ($case in @('initial', 'upgrade', 'pull-fails', 'wrong-label', 'candidate-fails', 'production-fails', 'rename-fails', 'unmanaged')) {
+foreach ($case in @('initial', 'upgrade', 'pull-fails', 'wrong-label', 'candidate-fails', 'production-fails', 'rename-fails', 'unmanaged', 'candidate-run-fails', 'production-run-fails')) {
     $global:HW3TestScenario = $case
     $global:HW3TestContainers = @{}
     $global:HW3TestCalls = @()
@@ -96,4 +101,4 @@ foreach ($case in @('initial', 'upgrade', 'pull-fails', 'wrong-label', 'candidat
     $global:HW3TestTestResults += "$case PASS"
 }
 $global:HW3TestTestResults | Write-Output
-Write-Output '8 simulated deployment scenarios passed; real Docker execution is not covered.'
+Write-Output '10 simulated deployment scenarios passed; real Docker execution is not covered.'

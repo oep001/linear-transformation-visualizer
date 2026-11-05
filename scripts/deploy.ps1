@@ -62,6 +62,7 @@ $locked = $false
 $candidate = "$ContainerName-candidate"
 $backup = "$ContainerName-previous"
 $candidateId = $null
+$candidateAttempted = $false
 $oldId = $null
 $newId = $null
 $oldStopped = $false
@@ -96,12 +97,14 @@ try {
         throw 'Image revision label does not match the requested Git commit'
     }
     # No host directories or Docker socket are mounted in the application.
+    $candidateAttempted = $true
     $candidateId = Invoke-Docker -Arguments @('run', '-d', '--name', $candidate, '--label', 'io.hw3.managed=true', '-p', '127.0.0.1::8000', $image)
     $candidateInfo = (Invoke-Docker -Arguments @('inspect', $candidateId) | Out-String | ConvertFrom-Json)[0]
     $candidatePort = $candidateInfo.NetworkSettings.Ports.'8000/tcp'[0].HostPort
     Assert-Service -BaseUrl "http://127.0.0.1:$candidatePort" -ExpectedCommit $Commit
     Invoke-Docker -Arguments @('rm', '-f', $candidateId) | Out-Null
     $candidateId = $null
+    $candidateAttempted = $false
 
     if ($oldId) {
         Invoke-Docker -Arguments @('stop', '--time', '20', $oldId) | Out-Null
@@ -123,6 +126,8 @@ try {
     Write-Warning "DEPLOYMENT FAILED: $deployError"
     if ($locked) {
         try {
+            # docker run can create a stopped container and then exit nonzero.
+            if ($candidateAttempted -and -not $candidateId) { $candidateId = Find-Container $candidate }
             if ($candidateId) {
                 & docker logs --tail 50 $candidateId 2>&1 | Out-Host
                 Invoke-Docker -Arguments @('rm', '-f', $candidateId) | Out-Null
