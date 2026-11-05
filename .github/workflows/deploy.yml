@@ -1,0 +1,60 @@
+name: Deploy Docker to Windows
+
+# Called only after CI's test, build, smoke check and Docker Hub push succeed.
+# No pull_request, pull_request_target, workflow_run or manual trigger.
+on:
+  workflow_call:
+    inputs:
+      commit:
+        required: true
+        type: string
+      digest:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hw3-windows-production
+  cancel-in-progress: false
+
+jobs:
+  windows:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'oep001/linear-transformation-visualizer' && inputs.commit == github.sha && vars.HW3_DEPLOY_ENABLED == 'true'
+    runs-on: [self-hosted, Windows, X64, hw3-deploy]
+    timeout-minutes: 15
+    environment: hw3-local
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - name: Check out trusted main commit without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          clean: true
+      - name: Reject superseded main commit
+        env:
+          EXPECTED_COMMIT: ${{ inputs.commit }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $head = git ls-remote origin refs/heads/main
+          if ($LASTEXITCODE -ne 0 -or ($head -split '\s+')[0] -ne $env:EXPECTED_COMMIT) {
+            throw 'This commit is no longer main HEAD. The newer push will deploy.'
+          }
+      - name: Pull verified image, replace container and verify APIs
+        env:
+          DEPLOY_COMMIT: ${{ inputs.commit }}
+          DEPLOY_DIGEST: ${{ inputs.digest }}
+          IMAGE_REPOSITORY: ${{ vars.DOCKERHUB_IMAGE }}
+        run: |
+          ./scripts/deploy.ps1 -ImageRepository $env:IMAGE_REPOSITORY -Commit $env:DEPLOY_COMMIT -Digest $env:DEPLOY_DIGEST
+      - name: Deployment result
+        if: success()
+        env:
+          DEPLOY_COMMIT: ${{ inputs.commit }}
+          DEPLOY_DIGEST: ${{ inputs.digest }}
+        run: |
+          "Verified http://127.0.0.1:8000 ; commit=$env:DEPLOY_COMMIT ; digest=$env:DEPLOY_DIGEST" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append

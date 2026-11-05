@@ -84,7 +84,7 @@ def version() -> JSONResponse:
     return JSONResponse(
         content={
             "version": os.getenv("APP_VERSION", "1.0.2"),
-            "commit": os.getenv("RENDER_GIT_COMMIT", "local"),
+            "commit": os.getenv("RENDER_GIT_COMMIT") or os.getenv("GIT_COMMIT") or "local",
         },
         headers={"Cache-Control": "no-store"},
     )
