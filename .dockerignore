@@ -1,0 +1,17 @@
+# Allow only runtime inputs; credentials, Git history, caches and evidence stay out.
+**
+!Dockerfile
+!.dockerignore
+!requirements.txt
+!app/
+!app/**
+!static/
+!static/**
+**/__pycache__/
+**/*.py[cod]
+**/.env
+**/.env.*
+**/*.pem
+**/*.key
+**/credentials*.json
+**/secrets*.json

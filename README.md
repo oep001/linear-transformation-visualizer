@@ -1,5 +1,11 @@
 # Linear Transformation Visualizer
 
+## HW3 Docker CI/CD
+
+기존 HW2 앱과 Render 배포를 유지하면서 Docker Hub와 Windows Self-hosted Runner 배포 경로를 추가했습니다. [HW3 실행 가이드](docs/hw3/guide.md), [최신 저장소 분석](docs/hw3/repository-analysis.md), [실제 검증 상태](docs/hw3/verification.md), [제출 점검표](docs/hw3/submission.md)를 참고하세요. 아래 HW2 배포 결과는 과거 기록이며 HW3 Docker 배포 성공을 뜻하지 않습니다.
+
+Docker 배포의 `/api/version`은 `GIT_COMMIT`을 지원하며 기존 `RENDER_GIT_COMMIT` 우선순위를 유지합니다. Docker Hub Secrets와 Runner 준비 후, 승인된 main Push에서만 자동 배포합니다. `HW3_DEPLOY_ENABLED`가 `true`가 아니면 배포를 건너뜁니다.
+
 2×2 행렬이 평면을 어떻게 바꾸는지 격자·벡터·기저벡터로 탐구하는 한국어 교육용 웹앱입니다. 대학교 「오픈소스SW개발방법및도구」 HW2 과제로, FastAPI 계산 API와 SVG 시각화, GitHub Actions CI, Render 자동 배포 설정을 함께 제공합니다.
 
 - GitHub 저장소: [oep001/linear-transformation-visualizer](https://github.com/oep001/linear-transformation-visualizer)

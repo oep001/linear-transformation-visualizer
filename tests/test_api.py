@@ -95,6 +95,20 @@ def test_health_and_version(monkeypatch):
     assert response.headers["cache-control"] == "no-store"
 
 
+@pytest.mark.parametrize(
+    "render_commit,docker_commit,expected",
+    [(None, None, "local"), (None, "a" * 40, "a" * 40),
+     ("b" * 40, "a" * 40, "b" * 40), ("", "a" * 40, "a" * 40)],
+)
+def test_version_commit_sources(monkeypatch, render_commit, docker_commit, expected):
+    for name, value in (("RENDER_GIT_COMMIT", render_commit), ("GIT_COMMIT", docker_commit)):
+        if value is None:
+            monkeypatch.delenv(name, raising=False)
+        else:
+            monkeypatch.setenv(name, value)
+    assert client.get("/api/version").json()["commit"] == expected
+
+
 def test_frontend_and_api_schema():
     response = client.get("/")
     assert response.status_code == 200

@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, hw3/docker-cicd]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -12,7 +12,7 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   test:
@@ -34,3 +34,79 @@ jobs:
         run: python -m pytest -q
       - name: Check browser JavaScript syntax
         run: node --check static/app.js
+
+  deploy-script:
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Test deployment and rollback control flow (simulated Docker)
+        shell: powershell
+        run: ./tests/deploy.Tests.ps1
+
+  docker:
+    needs: [test, deploy-script]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      digest: ${{ steps.publish.outputs.digest }}
+    env:
+      IMAGE_REPOSITORY: ${{ vars.DOCKERHUB_IMAGE || 'hw3-local/linear-transformation-visualizer' }}
+      COMMIT: ${{ github.sha }}
+    steps:
+      - name: Check out tested commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Validate image name
+        shell: bash
+        run: |
+          [[ "$IMAGE_REPOSITORY" =~ ^[a-z0-9][a-z0-9_-]*/[a-z0-9][a-z0-9._-]*$ ]] || { echo 'Invalid DOCKERHUB_IMAGE (use namespace/repository)'; exit 1; }
+      - name: Build Linux image for this commit
+        run: docker build --platform linux/amd64 --build-arg "GIT_COMMIT=$COMMIT" --tag "$IMAGE_REPOSITORY:sha-$COMMIT" .
+      - name: Start image and verify health, commit, transform and frontend
+        shell: bash
+        run: |
+          docker run -d --name hw3-ci --publish 127.0.0.1:8000:8000 "$IMAGE_REPOSITORY:sha-$COMMIT"
+          python scripts/smoke.py --commit "$COMMIT"
+      - name: Container logs and cleanup
+        if: always()
+        run: |
+          docker logs hw3-ci || true
+          docker rm -f hw3-ci || true
+      - name: Log in to Docker Hub (main push only)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'oep001/linear-transformation-visualizer'
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          CONFIGURED_IMAGE: ${{ vars.DOCKERHUB_IMAGE }}
+        shell: bash
+        run: |
+          test -n "$DOCKERHUB_USERNAME" && test -n "$DOCKERHUB_TOKEN" && test -n "$CONFIGURED_IMAGE" || { echo 'Set DOCKERHUB_USERNAME/DOCKERHUB_TOKEN secrets and DOCKERHUB_IMAGE variable'; exit 1; }
+          printf '%s' "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
+      - name: Publish exact SHA tag and record registry digest
+        id: publish
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'oep001/linear-transformation-visualizer'
+        shell: bash
+        run: |
+          docker push "$IMAGE_REPOSITORY:sha-$COMMIT"
+          ref=$(docker image inspect --format '{{index .RepoDigests 0}}' "$IMAGE_REPOSITORY:sha-$COMMIT")
+          digest="${ref##*@}"
+          [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] || exit 1
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          echo "Published SHA tag: sha-$COMMIT; digest: $digest" >> "$GITHUB_STEP_SUMMARY"
+      - name: Log out
+        if: always()
+        run: docker logout
+
+  deploy:
+    needs: docker
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'oep001/linear-transformation-visualizer' && vars.HW3_DEPLOY_ENABLED == 'true'
+    uses: ./.github/workflows/deploy.yml
+    with:
+      commit: ${{ github.sha }}
+      digest: ${{ needs.docker.outputs.digest }}
+    permissions:
+      contents: read
